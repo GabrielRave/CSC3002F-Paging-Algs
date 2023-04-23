@@ -1,5 +1,5 @@
 # Gabriel Ravenscroft RVNGAB001
-# Assignment 3 CSC3002F
+# Assignment 3 CSC3002F 2023
 # A program to implement different page replacement algorithms
 
 import sys
@@ -7,101 +7,108 @@ import random
 import queue
 
 
-
 def OPT(size, original_pages):
-    pages = original_pages.copy()       # make a duplicate of pages to be used in method
+    pages = original_pages.copy()  # make a duplicate of pages to be used in method
     faults = 0
-    q = queue.Queue()   # q (queue) represents main memory
-    while len(pages) != 0:
-        x = pages[0]
+    q = queue.Queue()  # q (queue) represents main memory
+
+    while len(pages) != 0:  # loop while there are pages that need to be put into memory
+        x = pages.pop(0)  # x is page to be added to main memory (q)
         done = False
 
-        for i in list(q.queue):  # loop used to check if page to be added to memory is already in memory (queue)
+        # Case 1
+        for i in list(q.queue):  # Case in which next page to be added is already in memory (queue)
             if i == x:
                 done = True
 
-        if not done and q.qsize() == size:  # Case of page fault. page is not in mem (queue: q) and mem is full
-            last = -1
-            pageToReplace = -1
-            for j in list(q.queue):
-                if pages.count(j) != 0:
-                    nextUse = pages.index(j)
-                    if nextUse > last:
-                        pageToReplace = j
-                        last = nextUse
-                else:
-                    pageToReplace = j
-                    last = 99999
-
-            for y in range(q.qsize()):  
-                current_element = q.get()
-                if current_element != pageToReplace:
-                    q.put(current_element)
-            q.put(x)        # x (the newest page) added onto head of queue
-            faults = faults + 1
-
+        # Case 2
         if not done and q.qsize() < size:  # Case in which memory (queue: q) still has space for a page to be added
             q.put(x)
-        pages.pop(0)
+
+        # Case 3
+        elif not done and q.qsize() == size:  # Case of page fault. page is not in mem (queue: q) and mem is full
+            last = -1
+            page_to_replace = None      # This will be the page in queue that either reappears last or does not reappear
+
+            for j in q.queue:  # loop finds page_to_replace. page_to_replace will always be found
+                if j not in pages:  # case in which there is element of main memory (q) that is not in pages
+                    page_to_replace = j
+                    break
+
+                elif pages.index(j) > last:  # find element of q that will be needed again furthest in future
+                    last = pages.index(j)
+                    page_to_replace = j
+
+            for y in range(q.qsize()):      # remove page_to_replace from queue
+                current_element = q.get()
+                if current_element != page_to_replace:
+                    q.put(current_element)
+            q.put(x)  # add x (the newest page) added onto head of queue
+            faults = faults + 1
     return faults
 
 
 def LRU(size, original_pages):
-    pages = original_pages.copy()       # make a duplicate of pages to be used in method
+    pages = original_pages.copy()  # make a duplicate of pages to be used in method
     faults = 0
     q = queue.Queue()  # q (queue) represents main memory
-    while len(pages) != 0:
-        x = pages[0]
+    while len(pages) != 0:  # loop while there are pages that need to be put into memory
+        x = pages.pop(0)
         done = False
-        for i in list(q.queue):  # loop used to check if page to be added to memory is already in memory (queue)
-            if i == x:
-                for y in range(q.qsize()):  # loop removes copy of x (newest page) from queue
+
+        # Case 1
+        for i in list(q.queue):  # Case in which next page to be added is already in memory (queue)
+            if i == x:  # if page to be added to memory is already in memory (queue)
+                for y in range(q.qsize()):  # loop removes old copy of x (newest page) from queue
                     current_element = q.get()
                     if current_element != x:
                         q.put(current_element)
                 q.put(x)  # x (the newest page) added onto head of queue
                 done = True
 
-        if not done and q.qsize() == size:  # Case of page fault is page is not in mem (queue: q) and mem is full
+        # Case 2
+        if not done and q.qsize() < size:  # Case in which memory (queue: q) still has space for a page to be added
+            q.put(x)
+
+        # Case 3
+        elif not done and q.qsize() == size:  # Case of page fault. Page is not in mem (queue: q) and mem is full
             q.get()
             q.put(x)
             faults = faults + 1
-
-        if not done and q.qsize() < size:  # Case in which memory (queue: q) still has space for a page to be added
-            q.put(x)
-        pages.pop(0)
     return faults
 
 
 def FIFO(size, original_pages):
-    pages = original_pages.copy()       # make a duplicate of pages to be used in method
+    pages = original_pages.copy()  # make a duplicate of pages to be used in method
     faults = 0
     q = queue.Queue()  # q (queue) represents main memory
-    while len(pages) != 0:
-        x = pages[0]
+    while len(pages) != 0:  # loop while there are pages that need to be put into memory
+        x = pages.pop(0)
         done = False
-        for i in list(q.queue):  # loop used to check if page to be added to memory is already in memory (queue)
+
+        # Case 1
+        for i in list(q.queue):  # Case in which next page to be added is already in memory (queue)
             if i == x:
                 done = True
 
-        if not done and q.qsize() == size:  # Case of page fault is page is not in memory (queue: q) and is full
+        # Case 2
+        if not done and q.qsize() < size:  # Case in which memory (queue: q) still has space for a page to be added
+            q.put(x)
+
+        # Case 3
+        elif not done and q.qsize() == size:  # Case of page fault is page is not in memory (queue: q) and is full
             q.get()
             q.put(x)
             faults = faults + 1
-
-        if not done and q.qsize() < size:  # Case in which memory (queue: q) still has space for a page to be added
-            q.put(x)
-        pages.pop(0)
     return faults
 
+
 def main():
-    size = 5  # number of slots in main memory
     length = 20  # number of input pages that will need to be put on main memory
+    size = int(sys.argv[1])     # number of slots in main memory
     pages = []
     for j in range(length):
         pages.append(random.randint(1, 9))
-    if len(sys.argv) > 1:
-        size = int(sys.argv[1])
     print("FIFO", FIFO(size, pages), "page faults.")
     print("LRU", LRU(size, pages), "page faults.")
     print("OPT", OPT(size, pages), "page faults.")
@@ -110,10 +117,5 @@ def main():
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python paging.py [number of page frames]")
-        main() #remove this!!
     else:
         main()
-
-# print("FIFO", FIFO(size, FIFO_pages), "page faults.")
-# print("LRU", LRU(size, LRU_pages), "page faults.")
-# print("OPT", OPT(size, OPT_pages), "page faults.")
